@@ -69,7 +69,7 @@ git push heroku main
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [License](License) file for details.
 
 ---
 
