@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interstellar Chat with Xylo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="stars"></div>
+    <div class="twinkling"></div>
+
+    <div class="chat-container">
+        <header class="chat-header">
+            <h1>🛸 Interstellar Communication Console</h1>
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span>Xylo is online</span>
+            </div>
+        </header>
+
+        <div id="chat-history" class="chat-history">
+            <!-- Messages will be added here by JavaScript -->
+        </div>
+
+        <div class="input-container">
+            <div class="input-area">
+                <input type="text" id="user-input" placeholder="Type your message to Xylo..." autocomplete="off">
+                <button id="send-button" onclick="sendMessage()">
+                    <span>Send</span>
+                    <span class="send-icon">🚀</span>
+                </button>
+            </div>
+            <div class="suggestions">
+                <span>Try asking:</span>
+                <button class="suggestion-btn" onclick="quickQuestion('Where are you from?')">Where are you from?</button>
+                <button class="suggestion-btn" onclick="quickQuestion('Why are you here?')">Why are you here?</button>
+                <button class="suggestion-btn" onclick="quickQuestion('Tell me about yourself')">Tell me about yourself</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let userName = null;
+
+        window.onload = function() {
+            addMessage("xylo", "Greetings! I am Xylo, an interstellar cultural ambassador. What should I call you?", "bot");
+            document.getElementById("user-input").focus();
+
+            // Add cosmic background
+            document.querySelector('.stars').style.display = 'block';
+            document.querySelector('.twinkling').style.display = 'block';
+        };
+
+        function sendMessage() {
+            const userInputField = document.getElementById("user-input");
+            const userMessage = userInputField.value.trim();
+            if (userMessage === "") return;
+
+            addMessage("you", userMessage, "user");
+            userInputField.value = "";
+
+            // Show typing indicator
+            const typingIndicator = addMessage("xylo", "Xylo is thinking...", "bot", true);
+
+            fetch('/get_response', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `message=${encodeURIComponent(userMessage)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Remove typing indicator
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+
+                if (data.status === 'success') {
+                    addMessage("xylo", data.response, "bot");
+                } else {
+                    console.error("Error:", data.response);
+                    addMessage("xylo", "My circuits are experiencing interference. Please try again.", "bot");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+                addMessage("xylo", "Communication link unstable. Please check your connection.", "bot");
+            });
+        }
+
+        function addMessage(sender, message, type, isTyping = false) {
+            const chatHistory = document.getElementById("chat-history");
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', `${type}-message`);
+
+            if (isTyping) {
+                messageDiv.classList.add('typing');
+                messageDiv.id = 'typing-indicator';
+            }
+
+            const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="sender-name">${sender === 'xylo' ? 'Xylo' : (userName || 'You')}</span>
+                        <span class="message-time">${timestamp}</span>
+                    </div>
+                    <div class="message-text">${message}</div>
+                </div>
+            `;
+
+            chatHistory.appendChild(messageDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            return isTyping ? messageDiv : null;
+        }
+
+        function quickQuestion(question) {
+            document.getElementById("user-input").value = question;
+            sendMessage();
+        }
+
+        // Enter key to send
+        document.getElementById("user-input").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Auto-focus input when clicking anywhere
+        document.addEventListener('click', function() {
+            document.getElementById("user-input").focus();
+        });
+    </script>
+</body>
+</html>
